@@ -1,5 +1,6 @@
 package com.example.firebaseauth
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -8,6 +9,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.firebaseauth.databinding.ActivityMainBinding
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         // initialize the firebase auth
         auth = FirebaseAuth.getInstance()
         // logout the user force fully if the user is logged in
-        auth.signOut()
+        // auth.signOut()
 
         binding.btnRegister.setOnClickListener {
             registerUser()
@@ -40,6 +42,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnLogin.setOnClickListener {
             loginUser()
+        }
+
+        binding.btnUpdateProfile.setOnClickListener {
+            updateProfile()
         }
     }
 
@@ -58,12 +64,12 @@ class MainActivity : AppCompatActivity() {
         if (email.isNotEmpty() && password.isNotEmpty()) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    auth.createUserWithEmailAndPassword(email,password).await()
+                    auth.createUserWithEmailAndPassword(email, password).await()
                     withContext(Dispatchers.Main) {
                         checkLoggedState()
                     }
-                }catch (e: Exception) {
-                    withContext(Dispatchers.Main){
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -81,12 +87,12 @@ class MainActivity : AppCompatActivity() {
         if (email.isNotEmpty() && password.isNotEmpty()) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    auth.signInWithEmailAndPassword(email,password).await()
+                    auth.signInWithEmailAndPassword(email, password).await()
                     withContext(Dispatchers.Main) {
                         checkLoggedState()
                     }
-                }catch (e: Exception) {
-                    withContext(Dispatchers.Main){
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
                         Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -98,10 +104,45 @@ class MainActivity : AppCompatActivity() {
      * Function to set the UI of logged in/out user using firebase authenticator
      * */
     private fun checkLoggedState() {
-        if (auth.currentUser == null) {
+        val user = auth.currentUser
+        if (user == null) {
             binding.tvLoggedStatus.text = "you are not logged in"
         } else {
             binding.tvLoggedStatus.text = "You are logged in"
+            binding.etUserName.setText(user.displayName)
+            binding.imgProfile.setImageURI(user.photoUrl)
+        }
+    }
+
+    /**
+     * update logged-in user with profile and userName using function updateProfile with @param UserProfileChangeRequest builder
+     * */
+    private fun updateProfile() {
+        auth.currentUser?.let { user ->
+            val userName = binding.etUserName.text.toString()
+            val photoURI = Uri.parse("android.resource://$packageName/${R.drawable.ic_income}")
+            val profileUpdate = UserProfileChangeRequest.Builder()
+                .setDisplayName(userName)
+                .setPhotoUri(photoURI)
+                .build()
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    user.updateProfile(profileUpdate).await()
+                    withContext(Dispatchers.Main) {
+                        checkLoggedState()
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Successfully updated",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 }
