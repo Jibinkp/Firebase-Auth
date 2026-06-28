@@ -53,4 +53,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation("com.google.android.gms:play-services-auth:21.4.0")
 }
